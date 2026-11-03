@@ -437,6 +437,336 @@ function audioTick(){if(!AC)return;const dt=.25,md=G.mode,on=playing(),night=G.t
  if(day&&aT.sil<=0&&md!=='SIEGE'&&(aT.b-=dt)<=0){aT.b=rnd(1.2,5);bird()}
  if((aT.x-=dt)<=0){aT.x=rnd(15,40);if(aT.sil<=0||Math.random()<.3)spook()}
  if(md==='FORT_BUILD'&&smesh.length&&(aT.v-=dt)<=0){aT.v=rnd(8,20);const m=PK(smesh);S.voice(m.position,m.userData.s.role==='Medic'?230:170)}}
+
+function installTouchControls(){
+
+    if(!TOUCH_DEVICE) return;
+
+    const style = document.createElement('style');
+
+    style.textContent = `
+        #touchControls {
+            position:fixed;
+            inset:0;
+            z-index:1000;
+            pointer-events:none;
+            display:none;
+            touch-action:none;
+            user-select:none;
+            -webkit-user-select:none;
+        }
+
+        #touchLook {
+            position:absolute;
+            top:0;
+            right:0;
+            width:55%;
+            height:70%;
+            pointer-events:auto;
+            touch-action:none;
+        }
+
+        #touchStick {
+            position:absolute;
+            left:25px;
+            bottom:35px;
+            width:125px;
+            height:125px;
+            border-radius:50%;
+            background:#ffffff22;
+            border:2px solid #ffffff77;
+            pointer-events:auto;
+            touch-action:none;
+        }
+
+        #touchKnob {
+            position:absolute;
+            width:52px;
+            height:52px;
+            left:34px;
+            top:34px;
+            border-radius:50%;
+            background:#ffffff99;
+            border:2px solid white;
+            pointer-events:none;
+        }
+
+        .touchBtn {
+            position:absolute;
+            width:62px;
+            height:62px;
+            border-radius:50%;
+            background:#182a36cc;
+            border:2px solid #ffffff99;
+            color:white;
+            font-size:13px;
+            font-weight:bold;
+            pointer-events:auto;
+            touch-action:none;
+        }
+
+        .touchBtn:active {
+            background:#a33c22dd;
+        }
+
+        #tFire {right:22px;bottom:45px;width:78px;height:78px;background:#922d2ddd}
+        #tAim {right:112px;bottom:55px}
+        #tReload {right:22px;bottom:140px}
+        #tMelee {right:105px;bottom:145px}
+        #tJump {right:22px;bottom:235px}
+        #tUse {right:112px;bottom:235px}
+        #tSprint {left:165px;bottom:35px}
+        #tCrouch {left:165px;bottom:110px}
+        #tInventory {right:22px;top:20px}
+        #tPause {left:20px;top:20px}
+
+        @media (max-width:600px) {
+            .touchBtn {width:54px;height:54px;font-size:11px}
+            #tFire {width:70px;height:70px}
+        }
+    `;
+
+    document.head.appendChild(style);
+
+    const controls = document.createElement('div');
+    controls.id = 'touchControls';
+
+    controls.innerHTML = `
+        <div id="touchLook"></div>
+
+        <div id="touchStick">
+            <div id="touchKnob"></div>
+        </div>
+
+        <button class="touchBtn" id="tFire">FIRE</button>
+        <button class="touchBtn" id="tAim">AIM</button>
+        <button class="touchBtn" id="tReload">R</button>
+        <button class="touchBtn" id="tMelee">Q</button>
+        <button class="touchBtn" id="tJump">JUMP</button>
+        <button class="touchBtn" id="tUse">USE</button>
+        <button class="touchBtn" id="tSprint">RUN</button>
+        <button class="touchBtn" id="tCrouch">CROUCH</button>
+        <button class="touchBtn" id="tInventory">BAG</button>
+        <button class="touchBtn" id="tPause">PAUSE</button>
+    `;
+
+    document.body.appendChild(controls);
+
+    renderer.domElement.style.touchAction = 'none';
+
+    // Keyboard action helper: reuse the existing game input handler.
+    function keyEvent(code, type){
+        window.dispatchEvent(new KeyboardEvent(type, {
+            code:code,
+            bubbles:true,
+            cancelable:true
+        }));
+    }
+
+    function bindHold(id, down, up){
+        const el = document.getElementById(id);
+
+        el.addEventListener('pointerdown', e=>{
+            e.preventDefault();
+            e.stopPropagation();
+            el.setPointerCapture(e.pointerId);
+            down();
+        });
+
+        const release = e=>{
+            e.preventDefault();
+            e.stopPropagation();
+            up();
+        };
+
+        el.addEventListener('pointerup', release);
+        el.addEventListener('pointercancel', release);
+        el.addEventListener('lostpointercapture', up);
+    }
+
+    function bindTap(id, code){
+        const el = document.getElementById(id);
+
+        el.addEventListener('pointerdown', e=>{
+            e.preventDefault();
+            e.stopPropagation();
+            keyEvent(code,'keydown');
+            keyEvent(code,'keyup');
+        });
+    }
+
+    // MOVEMENT JOYSTICK
+    const stick = document.getElementById('touchStick');
+    const knob = document.getElementById('touchKnob');
+
+    let stickId = null;
+
+    function resetStick(){
+        stickId = null;
+        K.KeyW = K.KeyA = K.KeyS = K.KeyD = false;
+        knob.style.transform = 'translate(0px,0px)';
+    }
+
+    stick.addEventListener('pointerdown', e=>{
+        e.preventDefault();
+        stickId = e.pointerId;
+        stick.setPointerCapture(stickId);
+        moveStick(e);
+    });
+
+    function moveStick(e){
+        if(e.pointerId !== stickId) return;
+
+        const r = stick.getBoundingClientRect();
+
+        let x = e.clientX - (r.left+r.width/2);
+        let y = e.clientY - (r.top+r.height/2);
+
+        const max = 43;
+        const len = Math.hypot(x,y);
+
+        if(len > max){
+            x = x/len*max;
+            y = y/len*max;
+        }
+
+        knob.style.transform = `translate(${x}px,${y}px)`;
+
+        K.KeyA = x < -12;
+        K.KeyD = x > 12;
+        K.KeyW = y < -12;
+        K.KeyS = y > 12;
+    }
+
+    stick.addEventListener('pointermove', moveStick);
+    stick.addEventListener('pointerup', resetStick);
+    stick.addEventListener('pointercancel', resetStick);
+
+    // CAMERA LOOK
+    const look = document.getElementById('touchLook');
+
+    let lookId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    look.addEventListener('pointerdown', e=>{
+        e.preventDefault();
+
+        lookId = e.pointerId;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        look.setPointerCapture(lookId);
+    });
+
+    look.addEventListener('pointermove', e=>{
+        if(e.pointerId !== lookId || !locked || invOpen) return;
+
+        const dx = e.clientX-lastX;
+        const dy = e.clientY-lastY;
+
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        yaw -= dx*.004*G.sens*(G.zoomK||1);
+
+        pitch = Math.max(
+            -1.45,
+            Math.min(1.45,
+                pitch-dy*.004*G.sens*(G.zoomK||1)
+            )
+        );
+
+        pl.rotation.y = yaw;
+        camera.rotation.x = pitch;
+    });
+
+    function endLook(){
+        lookId = null;
+    }
+
+    look.addEventListener('pointerup',endLook);
+    look.addEventListener('pointercancel',endLook);
+
+    // ACTION BUTTONS
+
+    // Shooting: supports automatic weapons too.
+    bindHold('tFire',()=>{
+        K.m0 = true;
+        if(locked && playing() && !invOpen) shoot();
+    },()=>{
+        K.m0 = false;
+    });
+
+    // Aiming.
+    bindHold('tAim',()=>{
+        K.m2 = true;
+    },()=>{
+        K.m2 = false;
+    });
+
+    // Sprint.
+    bindHold('tSprint',()=>{
+        K.ShiftLeft = true;
+    },()=>{
+        K.ShiftLeft = false;
+    });
+
+    // Interaction: E must remain held long enough for hold interactions.
+    bindHold('tUse',()=>{
+        keyEvent('KeyE','keydown');
+    },()=>{
+        keyEvent('KeyE','keyup');
+    });
+
+    // Jump.
+    bindHold('tJump',()=>{
+        K.Space = true;
+    },()=>{
+        K.Space = false;
+    });
+
+    bindTap('tReload','KeyR');
+    bindTap('tMelee','KeyQ');
+    bindTap('tCrouch','KeyC');
+    bindTap('tInventory','KeyI');
+
+    // Pause.
+    document.getElementById('tPause').addEventListener('pointerdown',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(playing()){
+            locked = false;
+            showPause();
+        }
+    });
+
+    // Only show controls while actually playing.
+    setInterval(()=>{
+        const visible =
+            locked &&
+            playing() &&
+            !invOpen &&
+            !frozen() &&
+            !inHQ();
+
+        controls.style.display = visible ? 'block' : 'none';
+    },200);
+
+    // Avoid stuck controls when the app loses focus.
+    window.addEventListener('blur',()=>{
+        resetStick();
+        K.m0 = K.m2 = K.Space = K.ShiftLeft = false;
+    });
+
+    document.addEventListener('visibilitychange',()=>{
+        if(document.hidden){
+            resetStick();
+            K.m0 = K.m2 = K.Space = K.ShiftLeft = false;
+        }
+    });
+}
 function initUI(){$('icoFile').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)importIcons(f)};loadSavedIcons();document.addEventListener('pointerdown',initAudio);document.addEventListener('keydown',initAudio);
  document.addEventListener('keydown',titleAny);$('title').addEventListener('pointerdown',titleAny);
  const pct=(c,v)=>document.querySelectorAll(c).forEach(x=>x.textContent=Math.round(v*100)+'%');
@@ -451,7 +781,10 @@ function initUI(){$('icoFile').onchange=e=>{const f=[...e.target.files];e.target
  document.addEventListener('mouseover',e=>{hov=(e.target.closest&&e.target.closest('.item,.lootItem'))||null;tipUpdate(e)});
  document.addEventListener('mousemove',e=>{if(e.clientX||e.clientY){lastMouse.x=e.clientX;lastMouse.y=e.clientY}if(tipEl.style.display==='block')tipMove(e)});
  document.addEventListener('mousedown',e=>{if(e.clientX||e.clientY){lastMouse.x=e.clientX;lastMouse.y=e.clientY}});
- setInterval(audioTick,250)}
+ setInterval(audioTick,250);
+
+installTouchControls();
+}
 const lastMouse={x:innerWidth/2,y:innerHeight/2},tipEl=document.createElement('div');tipEl.id='tt';document.body.appendChild(tipEl);
 function tipUpdate(e){const it=e.target.closest&&e.target.closest('.item');if(it&&it.dataset.tip&&!invDragging){tipEl.innerHTML=it.dataset.tip;tipEl.style.display='block';tipMove(e)}else tipEl.style.display='none'}
 function tipMove(e){const w=tipEl.offsetWidth,h=tipEl.offsetHeight;let x=e.clientX+16,y=e.clientY+18;if(x+w>innerWidth-4)x=e.clientX-w-12;if(y+h>innerHeight-4)y=e.clientY-h-12;tipEl.style.left=Math.max(2,x)+'px';tipEl.style.top=Math.max(2,y)+'px'}
@@ -605,13 +938,27 @@ addEventListener('keydown',e=>{K[e.code]=true;if(e.code==='Tab')e.preventDefault
 addEventListener('keyup',e=>{K[e.code]=false;if(e.code==='KeyE'&&holdC){clearTimeout(holdC.to);if(wheel)wheelDone();else if(!holdC.done){if(holdC.pick)use();else toggleFollow(holdC.c)}holdC=null}});addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(wheel&&locked){wheel.x=Math.max(-100,Math.min(100,wheel.x+e.movementX));wheel.y=Math.max(-100,Math.min(100,wheel.y+e.movementY));wheelUI();return}if(!locked||invOpen)return;yaw-=e.movementX*.0022*G.sens*(G.zoomK||1);pitch=Math.max(-1.45,Math.min(1.45,pitch-e.movementY*.0022*G.sens*(G.zoomK||1)));pl.rotation.y=yaw;camera.rotation.x=pitch});
 addEventListener('mousedown',e=>{if(e.button===0)K.m0=true;if(e.button===2)K.m2=true;if(!locked||!playing()||invOpen)return;if(e.button===0)shoot()});addEventListener('mouseup',e=>{if(e.button===0)K.m0=false;if(e.button===2)K.m2=false});
-renderer.domElement.addEventListener('click',()=>{if(playing()&&!locked&&!invOpen)lock()});
+renderer.domElement.addEventListener('click',()=>{
+    if(playing()&&!locked&&!invOpen){
+        if(TOUCH_DEVICE) resumeGame();
+        else lock();
+    }
+});
 function escResume(){if(!playing()||invOpen||performance.now()-(G.pauseAt||0)<350)return false;
  if(G.hqPause&&scrVis('hq')){resumeFort();return true}
  if(scrVis('pz')&&!locked){G.escTry=performance.now();lock();return true}
  return false}
 document.addEventListener('pointerlockerror',()=>{if(G.escTry&&performance.now()-G.escTry<1500){G.escTry=0;if(playing()&&!locked&&!invOpen&&!scrVis('hq')&&!scrVis('dev')&&!scrVis('opt'))ui('pz')}});
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;if(playing()&&!invOpen&&!skOpen){if(locked)ui(null);else showPause()}});
+document.addEventListener('pointerlockchange',()=>{
+    if(TOUCH_DEVICE) return;
+
+    locked=document.pointerLockElement===renderer.domElement;
+
+    if(playing()&&!invOpen&&!skOpen){
+        if(locked)ui(null);
+        else showPause();
+    }
+});
 document.querySelectorAll('.sens').forEach(e=>e.oninput=()=>{G.sens=+e.value;saveSet();document.querySelectorAll('.sens').forEach(x=>x.value=e.value)});
 document.querySelectorAll('.fov').forEach(e=>e.oninput=()=>{camera.fov=G.fov=+e.value;saveSet();camera.updateProjectionMatrix();document.querySelectorAll('.fovv').forEach(x=>x.textContent=e.value+'\u00b0');document.querySelectorAll('.fov').forEach(x=>x.value=e.value)});
 ui('title');initUI();animate()}
