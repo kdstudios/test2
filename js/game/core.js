@@ -350,7 +350,39 @@ function optTab(t){$('optMain').classList.toggle('hide',!!t);$('optV').classList
 function optBack(){if($('optMain').classList.contains('hide'))optTab(null);else ui(optFrom)}
 function setQuality(q){G.q=q;if(renderer){renderer.setPixelRatio(PERF.prFor(q));renderer.setSize(innerWidth,innerHeight)}document.querySelectorAll('.qb').forEach(b=>b.classList.toggle('on',+b.dataset.q===q));saveSet()}
 function saveSet(){try{localStorage.setItem('gf_set',JSON.stringify({ms:MSV,mv:MV,av:AV,sens:G.sens,fov:G.fov,q:G.q}))}catch(e){}}
-function lock(){initAudio();try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{})}catch(e){}}   /* v075: a lock without a key press / click just fails quietly (the loading screen asks for the key) */
+const TOUCH_DEVICE =
+    ('ontouchstart' in window) ||
+    navigator.maxTouchPoints > 0;
+
+function lock(){
+    initAudio();
+
+    if(TOUCH_DEVICE){
+        // Mobile doesn't need mouse pointer lock.
+        if(scrVis('pz')) return;
+
+        locked = true;
+        return;
+    }
+
+    try{
+        const r=renderer.domElement.requestPointerLock();
+        if(r&&r.catch)r.catch(()=>{});
+    }catch(e){}
+}
+function resumeGame(){
+    initAudio();
+
+    if(TOUCH_DEVICE){
+        locked = true;
+        G.pauseAt = 0;
+        ui(null);
+        $('hud').classList.remove('hide');
+        return;
+    }
+
+    lock();
+}
 
 // ===== AUDIO (all procedural WebAudio) =====
 const PI=Math.PI;let SFX,MUS,MASTER,NB,MV=.6,MSV=1,AV=1,musMode='',amb={},aT={g:0,b:2,v:6,x:20,m:1,sil:0,ss:30},hov=null;
