@@ -1,0 +1,244 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mini Fort Zombie: ThePizzaByte Edition v076</title>
+<!-- three.js r147 (MIT) inlined: the Modern code needs it; replaces the r128 CDN tag -->
+<script src="js/vendor/three-r147.js"></script>
+<link rel="stylesheet" href="css/fonts.css"><link rel="stylesheet" href="css/game.css"><link rel="stylesheet" href="css/ui.css"></head><body>
+<div id="cv"></div><div id="dv" style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 130px #c00;opacity:0;transition:opacity .3s;z-index:5"></div>
+<div id="hud" class="hide" style="position:absolute;inset:0;z-index:10;pointer-events:none">
+<div class="p" style="top:112px;left:10px;max-width:300px"><div class="r">OPERATION</div><div id="day" class="hide"></div><div id="obj" class="y"></div></div><div id="cc" class="hide"><div class="ccb" id="cc1"><b>1</b>Short</div><div class="ccb" id="cc2"><b>2</b>Medium</div><div class="ccb" id="cc3"><b>3</b>Far</div><div class="ccsep"></div><div class="ccb" id="cc4"><b>4</b>Follow</div><div class="ccb" id="cc5"><b>5</b>Stay</div></div>
+<div style="position:absolute;top:10px;left:50%;margin-left:-128px;width:256px;height:28px;overflow:hidden;background:#000b;border:1px solid #555;border-radius:6px"><div id="cs" style="position:absolute;top:5px;white-space:nowrap;color:#aaa"></div><div style="position:absolute;left:127px;width:2px;height:100%;background:#d22"></div><b id="cm" style="position:absolute;top:5px;color:#facc15">★</b><b id="cm2" style="position:absolute;top:5px;color:#22c55e">■</b></div>
+<div id="xh" style="position:absolute;top:50%;left:50%;width:8px;height:8px;margin:-4px;border:1px solid #fff;border-radius:50%;transition:background .08s,border-color .08s,box-shadow .08s"></div>
+<div id="fb" class="h" style="position:absolute;top:44%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .25s"></div>
+<div id="pr" class="y" style="position:absolute;top:64%;left:50%;transform:translateX(-50%);background:#000c;padding:5px 12px;border-radius:5px;opacity:0"></div>
+<div id="tip" class="p hide" style="top:70px;left:50%;transform:translateX(-50%);border-color:#facc15;font-size:12px">Z Barricade ghost (15) &rarr; scroll = rotate &middot; Z again = place &middot; X = cancel &middot; E on barricade = repair (5) &middot; Esc = HQ</div>
+<div class="p" style="bottom:10px;left:10px;width:250px"><span class="r">HEALTH</span> <span id="hpv"></span><div class="bar"><i id="hpb" style="background:#dc2626"></i></div><span class="g">STAMINA</span> <span id="stv"></span><div class="bar"><i id="stb" style="background:#22c55e"></i></div></div>
+<canvas id="mm" width="128" height="128" class="p" style="bottom:10px;left:50%;margin-left:-64px;padding:0"></canvas>
+<div class="p" style="bottom:10px;right:10px;display:flex;align-items:center;gap:12px"><canvas id="wsp" width="1" height="1" style="display:block;flex:0 0 auto"></canvas><div style="text-align:right"><div id="wn" class="y"></div><span id="ac" class="h"></span> / <span id="ar"></span></div></div></div>
+<div id="clkBox" class="p hide" style="top:10px;left:10px;text-align:left;z-index:50"><div id="clk" class="h y" style="font-size:32px"></div><div id="tts" class="r"></div><div id="fn" class="m"></div></div><div id="tw"></div>
+
+
+<!-- =====================================================================================================
+     v070 MENU LAYER. Every id/class the game scripts read is kept; layout + theme live in css/ui.css,
+     behaviour glue (option sub-pages, paging, fit-to-screen) in js/game/ui.js.
+     ===================================================================================================== -->
+<div id="bd" aria-hidden="true"><div class="bdSky"></div><div class="bdMoon"></div><svg id="bdCity" viewBox="0 0 1600 420" preserveAspectRatio="xMidYMax slice"></svg><canvas id="bdAsh"></canvas><div class="bdFog f1"></div><div class="bdFog f2"></div><div class="bdVig"></div><div class="bdGrunge"></div></div>
+<div id="grain" aria-hidden="true"></div>
+
+<div id="title" class="scr zlLoading">
+ <div class="ttl" onclick="titleAny()">
+  <div class="kicker">Open Source Douchebag Edition</div>
+  <h1 class="logo"><span class="l1">Mini</span><span class="l2">Fort Zombie</span></h1>
+  <div class="tagline">14 days to prepare. On day 14, the horde arrives.</div>
+  <div class="zlSlot"><div class="press"><span class="blink">Press any key</span></div></div>
+  <div class="ver verTxt">Version 076</div>
+ </div>
+</div>
+
+<div id="menu" class="scr hide">
+ <div class="mm">
+  <div class="mmBrand"><div class="kicker">Open Source Douchebag Edition</div><h1 class="logo sm"><span class="l1">Mini</span><span class="l2">Fort Zombie</span></h1></div>
+  <nav class="mmNav">
+   <button class="mbtn" onclick="newGame()"><i>01</i><span>New Game</span><small>Pick a Fort. Day 1 starts now.</small></button>
+   <button class="mbtn dis" disabled><i>02</i><span>Load Game</span><small>Autosave or a .sav file</small></button>
+   <button class="mbtn" onclick="openOptions('menu')"><i>03</i><span>Options</span><small>Sound, graphics, controls, icons</small></button>
+   <button class="mbtn dis" disabled><i>04</i><span>Exit</span><small>Close the browser tab to quit</small></button>
+  </nav>
+  <div class="mmFoot"><span class="verTxt">Version 076</span></div>
+ </div>
+ <blockquote class="mmQuote">&ldquo;It gets up and kills. The people it kills get up and <b>KILL!</b>&rdquo;</blockquote>
+</div>
+
+<div id="opt" class="scr hide">
+ <div class="win optWin">
+  <header class="winHead"><div class="winTitle">Options</div><div class="winCrumb" id="optCrumb"></div><button class="winBack" onclick="optBack()">Back <kbd>Esc</kbd></button></header>
+  <div class="optBody">
+   <nav id="optMain" class="sideNav">
+    <button class="mbtn" data-t="S" onclick="optTab('S')">Sound</button>
+    <button class="mbtn" data-t="K" onclick="optTab('K')">Controls</button>
+    <button class="mbtn" data-t="I" onclick="optTab('I')">Icons</button>
+    <button id="optDev" class="mbtn hide" onclick="devOpen()">Developer Toolkit</button>
+   </nav>
+   <section class="optPane">
+    <div id="optV" class="hide">
+     <div class="h r">Video</div>
+     <div class="optRow"><span>Field of view <b class="fovv y">75&deg;</b></span><input class="fov" type="range" min="60" max="110" value="75"></div>
+     <div class="optRow"><span>Render quality</span><div class="seg"><button class="qb" data-q="0" onclick="setQuality(0)">Low</button><button class="qb" data-q="1" onclick="setQuality(1)">Medium</button><button class="qb" data-q="2" onclick="setQuality(2)">High</button><button class="qb" data-q="3" onclick="setQuality(3)">Auto</button></div><div class="note">High caps at 2x resolution. Auto lowers the resolution when the frame rate dips and raises it again when there is headroom.</div></div>
+     <div class="optRow"><span>Antialiasing</span><div class="seg"><button class="ab" data-a="1" onclick="setAA(1)">On</button><button class="ab" data-a="0" onclick="setAA(0)">Off</button></div><div class="note">Turning this off is the biggest speed-up on laptops and high-density screens.</div></div>
+    </div>
+    <div id="optS" class="hide">
+     <div class="paneHead"><h2>Sound</h2><p>All audio is generated live. Changes apply immediately.</p></div>
+     <div class="paneGrid one">
+      <div class="optRow"><span>Master volume <b class="y vm">100%</b></span><input class="mastervol" type="range" min="0" max="100" value="100"></div>
+      <div class="optRow"><span>Game music volume <b class="y vmu">60%</b></span><input class="mvol" type="range" min="0" max="100" value="60"></div>
+      <div class="optRow hide" id="mmRow"><span>Menu music volume <b class="y" id="mmv">60%</b></span><input id="mmvol" type="range" min="0" max="100" value="60"></div>
+      <div class="optRow"><span>Ambient noise <b class="y va">100%</b></span><input class="avol" type="range" min="0" max="100" value="100"></div>
+     </div>
+    </div>
+    <div id="optK" class="hide">
+     <div class="paneHead"><h2>Controls</h2><p>Click a key, then press the new one (Esc cancels). Taking a key that is already used swaps the two actions. Mouse buttons and Esc are fixed.</p></div>
+     <div class="optRow sensRow"><span>Mouse sensitivity</span><input class="sens" type="range" min=".3" max="2.5" step=".1" value="1"></div>
+     <div id="kbList"></div>
+     <div class="paneFoot"><button onclick="kbDefaults()" class="warnBtn">Restore defaults</button><span id="kbMsg" class="m"></span></div>
+    </div>
+    <div id="optI" class="hide">
+     <div class="paneHead"><h2>Custom inventory icons</h2><p>Name each PNG after its item ID (e.g. <b>smoked_ham.png</b>) and import as many as you like. Transparent PNGs work and any size is scaled to the item's grid footprint. Icons are kept in this browser.</p></div>
+     <div class="paneTools"><button onclick="document.getElementById('icoFile').click()" class="priBtn">Import icons</button><button onclick="exportDefaultIcons()">Export default icons</button><button onclick="clearAllIcons()" class="warnBtn">Clear all custom icons</button><span id="icoCount" class="y"></span></div>
+     <input id="icoFile" type="file" accept="image/png,.png" multiple style="display:none">
+     <div id="icoMsg"></div>
+     <div id="icoCats" class="chips"></div>
+     <div id="icoList"></div>
+     <div class="pager" id="icoPager"></div>
+    </div>
+   </section>
+  </div>
+ </div>
+</div>
+
+<div id="sel" class="scr hide">
+ <div class="selWrap">
+  <header class="selHead"><button class="winBack" onclick="ui('menu')"><kbd>Esc</kbd> Back</button><div><div class="kicker">New campaign</div><h2>Choose your fort</h2><p>Clear it of the dead, scavenge the town, bring survivors home, fortify, then hold it through the siege on Day 14.</p></div></header>
+  <div class="cards">
+   <div class="card c-easy" onclick="pick('police')">
+    <svg class="emb" viewBox="0 0 100 100"><path d="M50 6 86 18v28c0 24-16 40-36 48C30 86 14 70 14 46V18z" class="e1"/><path d="M50 14 78 23v23c0 19-12 32-28 39C34 78 22 65 22 46V23z" class="e2"/><path d="m50 30 5.6 11.4 12.6 1.8-9.1 8.9 2.1 12.5L50 58.7l-11.2 5.9 2.1-12.5-9.1-8.9 12.6-1.8z" class="e3"/></svg>
+    <div class="cTier"><b>Easy</b><span class="pips"><i class="on"></i><i></i><i></i></span></div>
+    <div class="cName">Police Station</div>
+    <dl><dt>Your health</dt><dd>125</dd><dt>Zombie toughness</dt><dd>&times;1.0</dd><dt>Armoury</dt><dd>Shotgun + 9mm</dd></dl>
+    <div class="cGo">Deploy &rarr;</div>
+   </div>
+   <div class="card c-med" onclick="pick('prison')">
+    <svg class="emb" viewBox="0 0 100 100"><rect x="12" y="14" width="76" height="72" rx="3" class="e1"/><rect x="18" y="20" width="64" height="60" class="e2"/><path d="M28 20v60M41 20v60M54 20v60M67 20v60" class="e4"/><path d="M18 38h64M18 62h64" class="e4"/><path d="M8 12q6-6 12 0t12 0 12 0 12 0 12 0 12 0 12 0" class="e5"/></svg>
+    <div class="cTier"><b>Medium</b><span class="pips"><i class="on"></i><i class="on"></i><i></i></span></div>
+    <div class="cName">The Prison</div>
+    <dl><dt>Your health</dt><dd>100</dd><dt>Zombie toughness</dt><dd>&times;1.0</dd><dt>Armoury</dt><dd>Random melee + pistol</dd></dl>
+    <div class="cGo">Deploy &rarr;</div>
+   </div>
+   <div class="card c-hard" onclick="pick('school')">
+    <svg class="emb" viewBox="0 0 100 100"><path d="M10 48 50 20l40 28" class="e5"/><rect x="18" y="46" width="64" height="40" class="e1"/><rect x="42" y="62" width="16" height="24" class="e2"/><rect x="24" y="54" width="12" height="10" class="e2"/><rect x="64" y="54" width="12" height="10" class="e2"/><circle cx="50" cy="38" r="6" class="e3"/><path d="M50 8v12M50 8h12v6H50" class="e4"/></svg>
+    <div class="cTier"><b>Hard</b><span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+    <div class="cName">The School</div>
+    <dl><dt>Your health</dt><dd>100</dd><dt>Zombie toughness</dt><dd>&times;1.5</dd><dt>Armoury</dt><dd>Random melee + pistol</dd></dl>
+    <div class="cGo">Deploy &rarr;</div>
+   </div>
+  </div>
+  <div class="manual"><div class="manT">Field manual</div><div id="selKeys" class="keys"></div></div>
+ </div>
+</div>
+
+<div id="hq" class="scr hide">
+ <div id="hqGrid">
+  <header id="hqTop" class="win">
+   <div class="hqId"><div class="kicker" id="fnHQ">Fort HQ</div><h2>Fort HQ</h2><div id="hqs" class="m"></div><div id="hqPT" class="m"></div></div>
+   <div class="hqRes">
+    <div class="res"><span>Food</span><b id="rf" class="y"></b></div>
+    <div class="res"><span>Materials</span><b id="rm" class="b"></b></div>
+    <div class="res"><span>Meds</span><b id="rd" class="r"></b></div>
+    <div class="res"><span>Ammo</span><b id="ra" class="g"></b></div>
+    <div class="res"><span>Defences</span><b id="ri" class="o"></b></div>
+   </div>
+   <div class="hqClock"><div id="hqc" class="h y"></div>
+    <div id="hqPause"><button id="resumeBtn" class="priBtn" onclick="resumeFort()">Resume</button><p class="sysRow"><button onclick="openSkills()">Skills</button><button onclick="openOptions('hq')">Options</button><button class="stuckBtn" onclick="imStuck()">I'm Stuck</button></p></div>
+   </div>
+  </header>
+  <section id="hqMain" class="win">
+   <div class="secHead"><h3>Survivors <span id="sc" class="m"></span></h3><span class="m hint">Food upkeep 4 per person per day. Unfed survivors lose morale and leave.</span></div>
+   <div id="sl"></div>
+   <div id="ds" class="m"></div>
+   <div class="hqActs">
+    <button onclick="openHQInv()" class="okBtn">Fort inventory</button>
+    <button onclick="hqDeposit()" class="okBtn">Deposit all</button>
+    <button onclick="openSkills()" class="purBtn">Skills</button>
+    <span class="flex1"></span>
+    <button onclick="endDay()">Rest until morning</button>
+    <button onclick="go('FORT_BUILD')" class="priBtn">Enter fort</button>
+   </div>
+  </section>
+  <section id="hqMap" class="win">
+   <div class="secHead"><h3>Town map</h3><div id="tmDay" class="m"></div></div>
+   <div id="tmBox"><div id="tmWrap"><canvas id="tmCv" width="800" height="600"></canvas><div id="tmOver"></div></div></div>
+   <div id="tmLegend"></div>
+   <div id="tmInfo"></div>
+  </section>
+ </div>
+</div>
+
+<div id="pz" class="scr hide">
+ <div class="win pzWin">
+  <div class="kicker">Game paused</div>
+  <h2>Paused</h2>
+  <p class="m">The world is frozen while the mouse is released.</p>
+  <button onclick="lock()" class="priBtn big">Resume</button>
+  <div class="pzRow"><button onclick="openSkills()">Skills</button><button onclick="openOptions('pz')">Options</button><button class="stuckBtn" onclick="imStuck()">I'm Stuck</button></div>
+ </div>
+</div>
+
+<div id="end" class="scr hide">
+ <div class="win endWin">
+  <div class="kicker">Campaign over</div>
+  <h2 id="et"></h2>
+  <p id="es"></p>
+  <p id="est" class="m"></p>
+  <button onclick="location.reload()" class="priBtn big">New campaign</button>
+ </div>
+</div>
+
+<script src="js/data/fzcfg.js"></script>
+<script src="js/game/core.js"></script>
+<script src="js/game/devtoolkit.js"></script>
+<script src="js/game/perf.js"></script><script src="js/game/skills.js"></script><script src="js/data/rzombie.js"></script><script src="js/data/rzombie-tex.js"></script><script src="js/modern/zbody.js"></script><script src="js/modern/zoutfits.js"></script>
+<script src="js/data/survivors.js"></script>
+<script src="js/data/rsurv-tex.js"></script>
+<script src="js/modern/survivors.js"></script><script src="js/game/missions.js"></script>
+<script src="js/modern/guns.js"></script>
+<script src="js/modern/gun-env.js"></script>
+<script src="js/modern/herbier.js"></script>
+<script src="js/modern/hands.js"></script>
+<script src="js/data/modern-textures.js"></script>
+<script src="js/layers/world.js"></script>
+<script src="js/layers/decor.js"></script>
+<script src="js/layers/gunplay.js"></script><script src="js/modern/melee.js"></script><script src="js/layers/meleevm.js"></script>
+<script src="js/layers/graphics.js"></script>
+<script src="js/layers/atmosphere.js"></script>
+<script src="js/layers/detail.js"></script>
+<script src="js/layers/architecture.js"></script>
+<script src="js/layers/flora.js"></script>
+<script src="js/layers/chainlink.js"></script>
+<script src="js/modern/propkit.js"></script>
+<script src="js/layers/props.js"></script>
+<script src="js/layers/vehicles.js"></script>
+<script src="js/layers/stealth.js"></script>
+<script src="js/layers/zanim.js"></script>
+<script src="js/layers/ragdoll.js"></script>
+<script src="js/layers/savegame.js"></script>
+<script src="js/layers/devlineup.js"></script>
+<script src="js/layers/gore.js"></script>
+<script src="js/layers/survwalk.js"></script>
+<script src="js/layers/zpath.js"></script>
+<script src="js/layers/zclimb.js"></script>
+<script src="js/layers/ztackle.js"></script>
+<script src="js/layers/zaim.js"></script>
+<script src="js/layers/zknock.js"></script>
+<script src="js/props/mfzkit.js"></script>
+<script src="js/props/mfzm_storage.js"></script>
+<script src="js/props/mfzm_kitchen.js"></script>
+<script src="js/props/mfzm_office.js"></script>
+<script src="js/props/mfzm_outdoor.js"></script>
+<script src="js/layers/mfzprops.js"></script>
+<script src="js/layers/burgerjoint.js"></script>
+<script src="js/layers/gasstation.js"></script>
+<script src="js/layers/gunshop.js"></script>
+<script src="js/layers/bowling.js"></script>
+<script src="js/layers/supermarket.js"></script>
+<script src="js/layers/cerberus.js"></script>
+<script src="js/layers/church.js"></script>
+<script src="js/layers/cinema.js"></script>
+<script src="js/layers/hardware.js"></script>
+<script src="js/layers/motel.js"></script>
+<script src="js/layers/sporting.js"></script>
+<script src="js/data/fire-tex.js"></script>
+<script src="js/layers/fire.js"></script>
+<script src="js/layers/newlots.js"></script>
+<script src="js/game/ui.js"></script>
+<script src="js/game/occupation.js"></script>
+<script src="js/game/menuworld.js"></script>
+<script src="js/game/menumusic.js"></script>
+<script src="js/game/loader.js"></script>
+</body></html>
