@@ -1,5 +1,5 @@
 /* ===== REV 039 early helpers (performance pass) ===== */
-const PERF={aa:true,mat:'phong',built:false,farB:100,intR:16,n:0,zc:0,pr:1,prFor(q){return q===0?.6:q===1?1:q===3?(this.pr||1):Math.min(devicePixelRatio,2)}};
+const PERF={aa:true,mat:'phong',built:false,farB:100,intR:16,n:0,zc:0,pr:1,prFor(q){return q===0?.6:q===1?1:q===3?(this.pr||1):Math.min(devicePixelRatio,3)}};
 try{const o=JSON.parse(localStorage.getItem('gf_perf')||'null');if(o&&o.aa!==undefined)PERF.aa=!!o.aa}catch(e){}
 class SolidList extends Array{
  static get [Symbol.species](){return Array}
