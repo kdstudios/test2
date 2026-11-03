@@ -10,6 +10,20 @@
    - Options > Graphics > Display > Menu background switches back to the illustrated backdrop (saved: mfz_menuworld)
    Visual only: no AI, no gameplay state. G.time is only forced while no campaign exists (G.day < 1).
    ===================================================================================================== */
+const isIOS =
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' &&
+   navigator.maxTouchPoints > 1);
+
+try {
+  const saved = localStorage.getItem('mfz_menuworld');
+
+  MW.enabled = saved === '1' ? true :
+               saved === '0' ? false :
+               !isIOS;
+} catch(e) {
+  MW.enabled = !isIOS;
+}
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
