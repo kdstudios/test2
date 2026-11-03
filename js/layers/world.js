@@ -23,8 +23,16 @@ W.U=U;for(let i=0;i<64;i++){const n=NAMES[i],ex=n?(EXTRA[n]||[1,1]):[1,1];U.uCls
 
 /* ---------------- texture arrays ---------------- */
 (async function load(){
- try{
-  const S=D.size,N=D.n,dA=new Uint8Array(S*S*4*N),dB=new Uint8Array(S*S*4*N),cv=document.createElement('canvas');cv.width=cv.height=S;
+  try{
+
+    // Skip loading the large texture arrays entirely
+    if (!W.on) {
+      W.ready = true;
+      console.log('[world055] textures skipped');
+      return;
+    }
+
+    const S=D.size,N=D.n,dA=new Uint8Array(S*S*4*N),dB=new Uint8Array(S*S*4*N),cv=document.createElement('canvas');cv.width=cv.height=S;
   const cx=cv.getContext('2d',{willReadFrequently:true});
   const dec=b=>new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src='data:image/webp;base64,'+b});
   const t0=performance.now();
